@@ -8,6 +8,23 @@ from pygments import highlight
 from pygments.lexers import YamlLexer
 from pygments.formatters import TerminalFormatter
 
+CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".nuclei_search_config.yaml")
+
+def get_template_folder():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+            if "template_folder" in config and os.path.exists(config["template_folder"]):
+                return config["template_folder"]
+
+    default_template_folder = input("Enter the path to the nuclei-templates folder: ")
+    default_template_folder = os.path.expanduser(default_template_folder)
+
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        yaml.dump({"template_folder": default_template_folder}, f)
+
+    return default_template_folder
+
 def search_templates(search_term, template_folder):
     results = []
     for root, _, files in os.walk(template_folder):
@@ -36,11 +53,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Search templates in the nuclei-templates repository.")
     parser.add_argument("search_term", help="Search term to find templates.")
-    parser.add_argument("--template-folder", default="~/nuclei-templates", help="Local folder containing the template files.")
+    parser.add_argument("--template-folder", help="Local folder containing the template files.")
     args = parser.parse_args()
 
-    # Expand user's home directory if "~" is used in the template_folder argument
-    template_folder = os.path.expanduser(args.template_folder)
+    template_folder = args.template_folder or get_template_folder()
 
     if not os.path.exists(template_folder):
         print(f"Template folder '{template_folder}' does not exist.")
